@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraceForge Studio — Anime Line Art Tool for Krita</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0c0c0f;
+    --surface: #131318;
+    --surface2: #1a1a22;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #f0eff5;
+    --text-muted: #6b6a7a;
+    --text-mid: #9d9cad;
+    --accent: #7c6aff;
+    --accent2: #c084fc;
+    --glow: rgba(124, 106, 255, 0.15);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(12,12,15,0.75);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:0.6; transform:scale(0.85); }
+  }
+
+  .nav-links { display:flex; align-items:center; gap:36px; list-style:none; }
+  .nav-links a { color:var(--text-muted); text-decoration:none; font-size:14px; font-weight:500; transition:color .2s; }
+  .nav-links a:hover { color:var(--text); }
+  .nav-cta { background:var(--accent)!important; color:#fff!important; padding:8px 20px; border-radius:8px; font-weight:600!important; }
+  .nav-cta:hover { opacity:.88; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content:'';
+    position:absolute;
+    width:700px; height:700px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(124,106,255,.12) 0%,transparent 70%);
+    top:-100px; left:50%;
+    transform:translateX(-50%);
+    pointer-events:none;
+  }
+
+  .hero::after {
+    content:'';
+    position:absolute;
+    width:400px; height:400px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(192,132,252,.08) 0%,transparent 70%);
+    bottom:0; right:10%;
+    pointer-events:none;
+  }
+
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(124,106,255,.1);
+    border:1px solid rgba(124,106,255,.25);
+    border-radius:100px;
+    padding:6px 16px;
+    font-size:13px; color:var(--accent2); font-weight:500;
+    margin-bottom:32px;
+    animation:fadeUp .7s ease both;
+  }
+  .hero-badge span { width:6px;height:6px;border-radius:50%;background:var(--accent2);display:inline-block; }
+
+  .hero-title {
+    font-family:'Instrument Serif',serif;
+    font-size:clamp(52px,8vw,96px);
+    font-weight:400;
+    line-height:1.0;
+    letter-spacing:-2px;
+    margin-bottom:12px;
+    animation:fadeUp .7s .1s ease both;
+  }
+
+  .hero-title em {
+    font-style:italic;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+
+  .hero-sub {
+    font-size:clamp(16px,2vw,20px);
+    color:var(--text-muted);
+    max-width:520px;
+    margin:0 auto 48px;
+    font-weight:300;
+    line-height:1.65;
+    animation:fadeUp .7s .2s ease both;
+  }
+
+  .hero-buttons { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; animation:fadeUp .7s .3s ease both; }
+
+  .btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:14px 28px; border-radius:12px;
+    font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600;
+    text-decoration:none; cursor:pointer; border:none;
+    transition:all .22s ease;
+  }
+  .btn-primary { background:var(--accent); color:#fff; box-shadow:0 0 0 1px rgba(124,106,255,.3),0 8px 32px rgba(124,106,255,.25); }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 0 1px rgba(124,106,255,.4),0 12px 40px rgba(124,106,255,.35); }
+  .btn-ghost { background:var(--surface); color:var(--text-mid); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--border-hover); color:var(--text); transform:translateY(-2px); }
+
+  .hero-card {
+    margin-top:72px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:28px 40px;
+    display:inline-flex;
+    gap:48px; align-items:center;
+    animation:fadeUp .7s .45s ease both;
+    box-shadow:0 40px 80px rgba(0,0,0,.4);
+  }
+  .hero-stat { text-align:center; }
+  .hero-stat .num { font-family:'Instrument Serif',serif; font-size:32px; color:var(--text); line-height:1; margin-bottom:4px; }
+  .hero-stat .label { font-size:12px; color:var(--text-muted); letter-spacing:.5px; font-weight:500; }
+  .stat-divider { width:1px; height:44px; background:var(--border); }
+
+  /* FEATURES */
+  .features { padding:120px 48px; max-width:1200px; margin:0 auto; }
+
+  .section-label { font-size:12px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--accent); margin-bottom:16px; }
+  .section-title { font-family:'Instrument Serif',serif; font-size:clamp(32px,4vw,52px); font-weight:400; line-height:1.1; letter-spacing:-1px; margin-bottom:64px; max-width:560px; }
+
+  .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:2px; background:var(--border); border-radius:20px; overflow:hidden; }
+
+  .feature-card { background:var(--surface); padding:36px 32px; transition:background .25s; }
+  .feature-card:hover { background:var(--surface2); }
+  .feature-icon { width:44px;height:44px;border-radius:12px;background:var(--glow);border:1px solid rgba(124,106,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:20px; }
+  .feature-title { font-size:17px; font-weight:600; color:var(--text); margin-bottom:10px; letter-spacing:-.3px; }
+  .feature-desc { font-size:14px; color:var(--text-muted); line-height:1.65; font-weight:300; }
+
+  /* TABS */
+  .tabs-section { padding:80px 48px 120px; max-width:1200px; margin:0 auto; }
+
+  .tabs-nav { display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:32px;width:fit-content; }
+  .tab-btn { padding:9px 20px;border-radius:9px;border:none;background:transparent;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap; }
+  .tab-btn.active { background:var(--accent); color:#fff; }
+  .tab-btn:not(.active):hover { color:var(--text); }
+
+  .tab-content { display:none; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:40px; animation:fadeUp .3s ease both; }
+  .tab-content.active { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
+
+  .tab-info h3 { font-family:'Instrument Serif',serif; font-size:30px; font-weight:400; margin-bottom:14px; letter-spacing:-.5px; }
+  .tab-info p { color:var(--text-muted); font-size:15px; line-height:1.7; font-weight:300; margin-bottom:24px; }
+  .tab-visual { background:var(--bg); border:1px solid var(--border); border-radius:14px; height:240px; display:flex; align-items:center; justify-content:center; font-size:64px; position:relative; overflow:hidden; }
+  .tab-visual::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%,var(--glow) 0%,transparent 70%); }
+  .pill { display:inline-flex; align-items:center; gap:6px; background:rgba(124,106,255,.1); border:1px solid rgba(124,106,255,.2); border-radius:100px; padding:4px 12px; font-size:12px; color:var(--accent2); font-weight:500; margin-bottom:8px; margin-right:6px; }
+
+  /* DOWNLOAD */
+  .download-section { padding:120px 48px; background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .download-inner { max-width:700px; margin:0 auto; text-align:center; }
+
+  .download-card { background:var(--bg); border:1px solid var(--border); border-radius:24px; padding:48px; margin-top:48px; position:relative; overflow:hidden; }
+  .download-card::before { content:''; position:absolute; top:-80px; left:50%; transform:translateX(-50%); width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,rgba(124,106,255,.08) 0%,transparent 70%); pointer-events:none; }
+  .download-version { display:inline-flex; align-items:center; gap:8px; background:rgba(124,106,255,.1); border:1px solid rgba(124,106,255,.2); border-radius:100px; padding:6px 16px; font-size:13px; color:var(--accent2); font-weight:600; margin-bottom:24px; }
+  .download-title { font-family:'Instrument Serif',serif; font-size:36px; font-weight:400; margin-bottom:12px; letter-spacing:-.5px; }
+  .download-meta { display:flex; align-items:center; justify-content:center; gap:24px; margin:24px 0 36px; font-size:13px; color:var(--text-muted); }
+  .download-meta span { display:flex; align-items:center; gap:6px; }
+
+  .changelog { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px 28px; text-align:left; margin-top:28px; }
+  .changelog-title { font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-muted); margin-bottom:16px; }
+  .changelog-list { list-style:none; display:flex; flex-direction:column; gap:10px; }
+  .changelog-list li { display:flex; align-items:flex-start; gap:10px; font-size:14px; color:var(--text-mid); line-height:1.5; }
+  .changelog-list li::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-top:6px; flex-shrink:0; }
+
+  /* FOOTER */
+  footer { padding:60px 48px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; border-top:1px solid var(--border); }
+  .footer-logo { font-family:'Instrument Serif',serif; font-size:20px; color:var(--text); }
+  .footer-note { font-size:13px; color:var(--text-muted); }
+  .footer-links { display:flex; gap:24px; list-style:none; }
+  .footer-links a { font-size:13px; color:var(--text-muted); text-decoration:none; transition:color .2s; }
+  .footer-links a:hover { color:var(--text); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+  .reveal { opacity:0; transform:translateY(24px); transition:opacity .6s ease,transform .6s ease; }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+
+  /* RESPONSIVE */
+  @media(max-width:900px){
+    nav { padding:16px 24px; }
+    .nav-links { display:none; }
+    .features { padding:80px 24px; }
+    .features-grid { grid-template-columns:1fr; }
+    .tabs-section { padding:40px 24px 80px; }
+    .tab-content.active { grid-template-columns:1fr; }
+    .download-section { padding:80px 24px; }
+    .hero-card { flex-direction:column; gap:24px; padding:28px; }
+    .stat-divider { width:60px; height:1px; }
+    footer { padding:40px 24px; flex-direction:column; text-align:center; }
+    .tabs-nav { overflow-x:auto; width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="dot"></div>
+    TraceForge Studio
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#tabs">How it works</a></li>
+    <li><a href="#download" class="nav-cta">Download Free</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge"><span></span> Free & Open · Krita Plugin</div>
+  <h1 class="hero-title">Turn references into<br><em>anime line art</em></h1>
+  <p class="hero-sub">TraceForge Studio gives you professional trace guides, colour maps, and step-by-step construction layers — all inside Krita.</p>
+  <div class="hero-buttons">
+    <a href="#download" class="btn btn-primary">↓ &nbsp;Download v6.0</a>
+    <a href="#features" class="btn btn-ghost">See features →</a>
+  </div>
+  <div class="hero-card">
+    <div class="hero-stat"><div class="num">5</div><div class="label">View Modes</div></div>
+    <div class="stat-divider"></div>
+    <div class="hero-stat"><div class="num">v6</div><div class="label">Latest Release</div></div>
+    <div class="stat-divider"></div>
+    <div class="hero-stat"><div class="num">Free</div><div class="label">Always</div></div>
+    <div class="stat-divider"></div>
+    <div class="hero-stat"><div class="num">Py3</div><div class="label">Python 3</div></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="reveal">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Everything you need to trace like a pro</h2>
+  </div>
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <div class="feature-icon">🖼️</div>
+      <div class="feature-title">Original Viewer</div>
+      <div class="feature-desc">Your reference image unmodified at full quality — use it as your ground truth while you trace.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✏️</div>
+      <div class="feature-title">Line Art Generator</div>
+      <div class="feature-desc">Converts your image into clean pencil-sketch line art using smart edge detection — ready to trace over.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎨</div>
+      <div class="feature-title">Colour Guide</div>
+      <div class="feature-desc">Original image with optional edge overlay plus an extracted palette strip for planning your colours.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <div class="feature-title">Colour Map</div>
+      <div class="feature-desc">Flat colour zones with hex labels per region — the perfect cell-shading reference.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📐</div>
+      <div class="feature-title">Trace Steps</div>
+      <div class="feature-desc">Anatomy-driven construction layers from head circle to hair details, each with written instructions.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Threaded Processing</div>
+      <div class="feature-desc">All heavy work runs in background threads — no freezing, no waiting, just a smooth workflow.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TABS -->
+<section class="tabs-section" id="tabs">
+  <div class="reveal">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Five views, one workflow</h2>
+  </div>
+  <div class="tabs-nav reveal">
+    <button class="tab-btn active" onclick="setTab(0)">Original</button>
+    <button class="tab-btn" onclick="setTab(1)">Line Art</button>
+    <button class="tab-btn" onclick="setTab(2)">Colour Guide</button>
+    <button class="tab-btn" onclick="setTab(3)">Colour Map</button>
+    <button class="tab-btn" onclick="setTab(4)">Trace Steps</button>
+  </div>
+
+  <div class="tab-content active reveal" id="tab-0">
+    <div class="tab-info">
+      <h3>Original View</h3>
+      <p>Your reference image exactly as-is — zero modifications, full resolution. Use this as your ground truth while you work.</p>
+      <span class="pill">📌 Tab 0</span><span class="pill">No processing</span>
+    </div>
+    <div class="tab-visual">🖼️</div>
+  </div>
+  <div class="tab-content" id="tab-1">
+    <div class="tab-info">
+      <h3>Line Art</h3>
+      <p>Runs pencil-sketch edge detection on your image and outputs clean line art you can trace directly in Krita.</p>
+      <span class="pill">✏️ Tab 1</span><span class="pill">OpenCV edges</span>
+    </div>
+    <div class="tab-visual">✏️</div>
+  </div>
+  <div class="tab-content" id="tab-2">
+    <div class="tab-info">
+      <h3>Colour Guide</h3>
+      <p>Shows your original image with an optional edge overlay and a colour palette strip — great for deciding your palette before you paint.</p>
+      <span class="pill">🎨 Tab 2</span><span class="pill">Palette extraction</span>
+    </div>
+    <div class="tab-visual">🎨</div>
+  </div>
+  <div class="tab-content" id="tab-3">
+    <div class="tab-info">
+      <h3>Colour Map</h3>
+      <p>Segments your image into flat colour zones and labels each region with its hex code — perfect for anime cell-shading workflows.</p>
+      <span class="pill">🗺️ Tab 3</span><span class="pill">Hex labels per zone</span>
+    </div>
+    <div class="tab-visual">🗺️</div>
+  </div>
+  <div class="tab-content" id="tab-4">
+    <div class="tab-info">
+      <h3>Trace Steps</h3>
+      <p>Professional construction steps built up in cumulative layers. Each step has text instructions guiding you from basic shapes to fine details.</p>
+      <span class="pill">📐 Tab 4</span><span class="pill">Head → Hair → Details</span>
+    </div>
+    <div class="tab-visual">📐</div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="download-section" id="download">
+  <div class="download-inner">
+    <div class="reveal">
+      <div class="section-label" style="text-align:center">Download</div>
+      <h2 class="section-title" style="max-width:100%;text-align:center;margin-bottom:0">Get TraceForge Studio</h2>
+      <p style="color:var(--text-muted);font-size:15px;margin-top:14px;font-weight:300">Free forever. No account needed. Just Python 3 + Krita 5+.</p>
+    </div>
+    <div class="download-card reveal">
+      <div class="download-version">✦ Latest Release · v6.0</div>
+      <div class="download-title">TraceForge Studio By Otaku</div>
+      <div class="download-meta">
+        <span>🐍 Python 3</span>
+        <span>🖌️ Krita 5+</span>
+        <span>💾 ~38 KB</span>
+        <span>📅 2025</span>
+      </div>
+      <a href="TraceForge_Studio_By_Otaku.py" download class="btn btn-primary" style="width:100%;justify-content:center;font-size:16px;padding:16px;">
+        ↓ &nbsp;Download Free
+      </a>
+      <div class="changelog">
+        <div class="changelog-title">What's new in v6.0</div>
+        <ul class="changelog-list">
+          <li>New Colour Map tab — flat zones with hex labels per region</li>
+          <li>Anatomy-driven Trace Steps with cumulative construction layers</li>
+          <li>All processing moved to background threads — no UI freeze</li>
+          <li>Auto-installs Pillow, NumPy, and OpenCV on first run</li>
+          <li>Paint tab removed for a cleaner, focused experience</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">TraceForge Studio</div>
+  <div class="footer-note">Made with ❤️ by Otaku · Free for all artists</div>
+  <ul class="footer-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#download">Download</a></li>
+  </ul>
+</footer>
+
+<script>
+  function setTab(i) {
+    document.querySelectorAll('.tab-content').forEach((el,idx) => el.classList.toggle('active', idx===i));
+    document.querySelectorAll('.tab-btn').forEach((btn,idx) => btn.classList.toggle('active', idx===i));
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
