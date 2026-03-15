@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AutoDraw Studio — Auto-Draw Anime Art in Krita</title>
+<style>html,body{background:#07080c!important;color:#f1f2f8}</style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -26,11 +27,11 @@
   --glow-t:   rgba(45,212,191,0.12);
 }
 
-html { scroll-behavior:smooth; background:#07080c; }
+html { scroll-behavior:smooth; background:#07080c !important; color:#f1f2f8; }
 
 body {
-  background:#07080c;
-  background:var(--bg);
+  background:#07080c !important;
+  background:var(--bg) !important;
   color:var(--text);
   font-family:'Inter',sans-serif;
   font-size:16px;
@@ -403,7 +404,8 @@ footer {
 
 /* ── ANIMATIONS ── */
 @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-.reveal { opacity:0; transform:translateY(28px); transition:opacity .65s ease, transform .65s ease; }
+.reveal { opacity:1; transform:translateY(0); transition:opacity .65s ease, transform .65s ease; }
+.reveal.hidden-init { opacity:0; transform:translateY(28px); }
 .reveal.visible { opacity:1; transform:translateY(0); }
 
 /* ── RESPONSIVE ── */
@@ -711,11 +713,14 @@ function setTab(i) {
   document.querySelectorAll('.tab-btn').forEach((btn,idx) => btn.classList.toggle('active', idx===i));
 }
 
+// Add hidden-init only via JS so elements are always visible if JS fails
+document.querySelectorAll('.reveal').forEach(el => el.classList.add('hidden-init'));
+
 const obs = new IntersectionObserver(entries => {
   entries.forEach(e => {
-    if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); }
+    if(e.isIntersecting){ e.target.classList.remove('hidden-init'); e.target.classList.add('visible'); obs.unobserve(e.target); }
   });
-}, { threshold: 0.08 });
+}, { threshold: 0.05 });
 document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 </script>
 </body>
